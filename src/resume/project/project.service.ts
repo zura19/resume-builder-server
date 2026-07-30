@@ -47,6 +47,10 @@ export class ProjectService {
       data: this.data(data),
     });
     if (!result.count) throw new NotFoundException('Project not found.');
+
+    return {
+      message: 'Project updated successfully',
+    };
   }
   async remove(generatedResumeId: string, id: string, userId: string) {
     await this.generatedResumeContent.assertOwnership(
@@ -57,6 +61,10 @@ export class ProjectService {
       where: { id, generatedResumeId },
     });
     if (!result.count) throw new NotFoundException('Project not found.');
+
+    return {
+      message: 'Project deleted successfully',
+    };
   }
   async reorder(
     generatedResumeId: string,

@@ -54,6 +54,10 @@ export class EducationService {
       data: this.data(data),
     });
     if (!result.count) throw new NotFoundException('Education not found.');
+
+    return {
+      message: 'Education updated successfully',
+    };
   }
 
   async remove(generatedResumeId: string, id: string, userId: string) {
@@ -65,6 +69,10 @@ export class EducationService {
       where: { id, generatedResumeId },
     });
     if (!result.count) throw new NotFoundException('Education not found.');
+
+    return {
+      message: 'Education deleted successfully',
+    };
   }
 
   async reorder(
@@ -83,14 +91,18 @@ export class EducationService {
         orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
       });
       const currentIndex = items.findIndex((item) => item.id === id);
-      if (currentIndex === -1) throw new NotFoundException('Education not found.');
+      if (currentIndex === -1)
+        throw new NotFoundException('Education not found.');
 
       const [item] = items.splice(currentIndex, 1);
       const order = Math.max(0, Math.min(data.order, items.length));
       items.splice(order, 0, item);
       await Promise.all(
         items.map((entry, index) =>
-          tx.education.update({ where: { id: entry.id }, data: { order: index } }),
+          tx.education.update({
+            where: { id: entry.id },
+            data: { order: index },
+          }),
         ),
       );
       return { id, order };
