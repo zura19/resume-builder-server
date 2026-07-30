@@ -9,11 +9,18 @@ export class SummaryService {
     private readonly generatedResumeContent: GeneratedResumeContentService,
   ) {}
 
-  async update(generatedResumeId: string, summary: string, userId: string) {
-    await this.generatedResumeContent.assertOwnership(generatedResumeId, userId);
+  async update(
+    generatedResumeId: string,
+    summary: string | null,
+    userId: string,
+  ) {
+    await this.generatedResumeContent.assertOwnership(
+      generatedResumeId,
+      userId,
+    );
     return this.db.generatedResume.update({
       where: { id: generatedResumeId },
-      data: { summary },
+      data: { summary: summary ?? '' },
       select: { id: true, summary: true },
     });
   }

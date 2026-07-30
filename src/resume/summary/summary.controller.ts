@@ -1,14 +1,14 @@
 import { Body, Controller, Param, Patch, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 import type { User } from '@prisma/client';
 import { SummaryService } from './summary.service';
 
 class UpdateSummaryDto {
   @IsString()
-  @IsNotEmpty()
-  summary: string;
+  @IsOptional()
+  summary?: string;
 }
 
 @UseGuards(AuthGuard('jwt'))
@@ -22,6 +22,10 @@ export class SummaryController {
     @Body() body: UpdateSummaryDto,
     @UserDecorator() user: User,
   ) {
-    return this.summaryService.update(generatedResumeId, body.summary, user.id);
+    return this.summaryService.update(
+      generatedResumeId,
+      body.summary ?? null,
+      user.id,
+    );
   }
 }

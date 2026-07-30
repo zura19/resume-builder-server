@@ -15,7 +15,7 @@ import { ReorderDto } from '../dto/reorder.dto';
 import { ProjectService } from './project.service';
 
 @UseGuards(AuthGuard('jwt'))
-@Controller('generated-resumes/:generatedResumeId/projects')
+@Controller('generated-resumes/:generatedResumeId/project')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
   @Post() create(
