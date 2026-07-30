@@ -218,48 +218,6 @@ export class ResumeRepository {
     });
   }
 
-  async updateGeneratedResume(id: string, data: GeneratedResumeDto) {
-    return this.db.generatedResume.update({
-      where: { id },
-      data: {
-        summary: data.summary,
-        personalInfo: { upsert: { create: data.personalInfo, update: data.personalInfo } },
-        skills: { upsert: { create: data.skills, update: data.skills } },
-        education: {
-          deleteMany: {},
-          create: data.education.map((education, order) => ({
-            university: education.university,
-            degree: education.degree,
-            fieldOfStudy: education.fieldOfStudy,
-            startDate: education.startDate,
-            endDate: education.endDate ?? '',
-            order,
-          })),
-        },
-        experiences: {
-          deleteMany: {},
-          create: data.experience.map((experience, order) => ({
-            company: experience.company,
-            position: experience.position,
-            startDate: experience.startDate,
-            endDate: experience.endDate ?? '',
-            responsibilities: experience.responsibilities,
-            order,
-          })),
-        },
-        projects: {
-          deleteMany: {},
-          create: data.projects.map((project, order) => ({
-            title: project.title,
-            technologies: project.technologies,
-            features: project.features,
-            order,
-          })),
-        },
-      },
-    });
-  }
-
   async updateTitle(id: string, title: string) {
     return this.db.resume.update({
       where: { id },

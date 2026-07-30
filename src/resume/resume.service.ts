@@ -59,47 +59,6 @@ export class ResumeService {
     }
   }
 
-  async updateResume(
-    id: string,
-    generatedResumeId: string,
-    body: GeneratedResumeDto,
-    user: User,
-  ) {
-    try {
-      const existingResume = await this.resumeRepository.getResume(id); // Check if the resume exists
-
-      if (existingResume?.userId !== user.id) {
-        throw new BadRequestException(
-          'You are not authorized to update this resume.',
-        );
-      }
-
-      if (!existingResume) {
-        throw new NotFoundException(`Resume with id: ${id} not found.`);
-      }
-
-      const existingGeneratedResume = existingResume.generatedResumes.find(
-        (g) => g.id === generatedResumeId,
-      );
-
-      if (!existingGeneratedResume) {
-        throw new NotFoundException(
-          `Generated resume with id: ${generatedResumeId} not found for resume with id: ${id}.`,
-        );
-      }
-
-      const updatedResume = await this.resumeRepository.updateGeneratedResume(
-        generatedResumeId,
-        body,
-      );
-
-      return { success: true, data: updatedResume };
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  }
-
   async createAnotherVersionOfResume(
     id: string,
     prompt: string,
