@@ -3,10 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GeneratedResume, Project, Resume, User } from '@prisma/client';
+import { Resume, User } from '@prisma/client';
 import { DbService } from 'src/db/db.service';
 import { CreateResumeDto } from './dto/resume.dto';
-import { ResumeRepository } from './resume.repository';
+import {
+  GeneratedResumeWithDetails,
+  ResumeRepository,
+} from './resume.repository';
 import { AiService } from 'src/ai/ai.service';
 import { GeneratedResumeDto } from './dto/generated-resume/generated-resume.dto';
 import { GenerateFeautureDto } from './dto/with-ai/generate-feature.dto';
@@ -25,22 +28,15 @@ export class ResumeService {
   async createResume(body: CreateResumeDto, userId: string): Promise<string> {
     try {
       const generatedResume = await this.aiService.generateResume(body);
-      console.log(generatedResume);
+      const generatedData = this.parseGeneratedResume(generatedResume.content);
       const resume = await this.resumeRepository.createResume(
         body,
         {
           aiModel: generatedResume.aiModel,
-          content: generatedResume.content,
+          data: generatedData,
         },
         userId,
       );
-
-      let res;
-      try {
-        res = JSON.parse(generatedResume.content || '');
-      } catch (error) {
-        throw new Error('Invalid JSON format in generatedResume');
-      }
 
       return resume.id;
     } catch (error) {
@@ -94,7 +90,7 @@ export class ResumeService {
 
       const updatedResume = await this.resumeRepository.updateGeneratedResume(
         generatedResumeId,
-        JSON.stringify(body),
+        body,
       );
 
       return { success: true, data: updatedResume };
@@ -122,8 +118,9 @@ export class ResumeService {
       // const latestGeneratedResume =
       //   resume.generatedResumes[resume.generatedResumes.length - 1];
 
-      const resumes = resume.generatedResumes.map((g) => g.content);
-      console.log(resumes);
+      const resumes = resume.generatedResumes.map((generatedResume) =>
+        JSON.stringify(this.serializeGeneratedResume(generatedResume)),
+      );
 
       const updatedResume = await this.aiService.updateResume(
         resumes as string[],
@@ -134,7 +131,7 @@ export class ResumeService {
 
       const generatedResume = await this.resumeRepository.createGeneratedResume(
         id,
-        updatedResume.resume as string,
+        this.parseGeneratedResume(updatedResume.resume),
         updatedResume.aiModel,
       );
 
@@ -421,5 +418,50 @@ export class ResumeService {
       console.log(error);
       throw error;
     }
+  }
+
+  private parseGeneratedResume(content: string | null): GeneratedResumeDto {
+    if (!content) {
+      throw new BadRequestException('AI did not return a generated resume.');
+    }
+
+    try {
+      return JSON.parse(content) as GeneratedResumeDto;
+    } catch {
+      throw new BadRequestException('Invalid JSON format in generated resume.');
+    }
+  }
+
+  private serializeGeneratedResume(
+    generatedResume: GeneratedResumeWithDetails,
+  ): GeneratedResumeDto {
+    if (!generatedResume.personalInfo || !generatedResume.skills) {
+      throw new BadRequestException('Generated resume is missing required details.');
+    }
+
+    return {
+      summary: generatedResume.summary,
+      personalInfo: generatedResume.personalInfo,
+      skills: generatedResume.skills,
+      education: generatedResume.education.map((education) => ({
+        university: education.university,
+        degree: education.degree ?? '',
+        fieldOfStudy: education.fieldOfStudy,
+        startDate: education.startDate,
+        endDate: education.endDate,
+      })),
+      experience: generatedResume.experiences.map((experience) => ({
+        company: experience.company,
+        position: experience.position,
+        startDate: experience.startDate,
+        endDate: experience.endDate,
+        responsibilities: experience.responsibilities,
+      })),
+      projects: generatedResume.projects.map((project) => ({
+        title: project.title,
+        technologies: project.technologies,
+        features: project.features,
+      })),
+    };
   }
 }

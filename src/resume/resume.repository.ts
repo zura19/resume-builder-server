@@ -1,97 +1,79 @@
 import { Injectable } from '@nestjs/common';
-import { GeneratedResume, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { DbService } from 'src/db/db.service';
 import { CreateResumeDto } from './dto/resume.dto';
+import { GeneratedResumeDto } from './dto/generated-resume/generated-resume.dto';
+
+export type GeneratedResumeWithDetails = Prisma.GeneratedResumeGetPayload<{
+  include: {
+    personalInfo: true;
+    skills: true;
+    education: true;
+    experiences: true;
+    projects: true;
+  };
+}>;
 
 @Injectable()
 export class ResumeRepository {
   constructor(private db: DbService) {}
 
+  private generatedResumeData(data: GeneratedResumeDto, aiModel: string) {
+    return {
+      aiModel,
+      summary: data.summary,
+      personalInfo: { create: data.personalInfo },
+      skills: { create: data.skills },
+      education: {
+        create: data.education.map((education, order) => ({
+          university: education.university,
+          degree: education.degree,
+          fieldOfStudy: education.fieldOfStudy,
+          startDate: education.startDate,
+          endDate: education.endDate ?? '',
+          order,
+        })),
+      },
+      experiences: {
+        create: data.experience.map((experience, order) => ({
+          company: experience.company,
+          position: experience.position,
+          startDate: experience.startDate,
+          endDate: experience.endDate ?? '',
+          responsibilities: experience.responsibilities,
+          order,
+        })),
+      },
+      projects: {
+        create: data.projects.map((project, order) => ({
+          title: project.title,
+          technologies: project.technologies,
+          features: project.features,
+          order,
+        })),
+      },
+    };
+  }
+
   async createResume(
     body: CreateResumeDto,
-    generated: {
-      aiModel: string;
-      content: string | null;
-    },
+    generated: { aiModel: string; data: GeneratedResumeDto },
     userId: string,
   ) {
-    const { personalInfo, education, experience, skills, projects } = body;
-
-    const transation = await this.db.$transaction(async (tx) => {
+    return this.db.$transaction(async (tx) => {
       const resume = await tx.resume.create({
         data: {
           userId,
           type: body.type,
-          // generatedResume: generated || '',
-          personalInfo: {
-            create: {
-              fullName: personalInfo.fullName,
-              email: personalInfo.email,
-              phone: personalInfo.phone,
-              address: personalInfo.address,
-            },
+          generatedResumes: {
+            create: this.generatedResumeData(generated.data, generated.aiModel),
           },
-
-          skills: {
-            create: {
-              soft: skills.soft,
-              languages: skills.languages,
-              technical: skills.technical,
-            },
-          },
-
-          education: {
-            create: education.map((edu) => ({
-              university: edu.university,
-              degree: edu.degree ?? '',
-              fieldOfStudy: edu.fieldOfStudy,
-              startDate: edu.startDate,
-              endDate: edu.endDate,
-              stillStudying: edu.stillStudying ?? false,
-            })),
-          },
-
-          experiences: {
-            create: experience.map((exp) => ({
-              company: exp.company,
-              position: exp.position,
-              description: exp.description ?? null,
-              startDate: exp.startDate,
-              endDate: exp.endDate,
-              stillWorking: exp.stillWorking ?? false,
-            })),
-          },
-
-          projects: {
-            create: projects.map((project) => ({
-              title: project.title,
-              description: project.description,
-            })),
-          },
-        },
-
-        include: {
-          personalInfo: true,
-          skills: true,
-          education: true,
-          experiences: true,
-          projects: true,
         },
       });
-
-      const title = `${personalInfo.fullName} - ${resume.id}`;
 
       await tx.resume.update({
         where: { id: resume.id },
-        data: { title },
-      });
-
-      await tx.generatedResume.create({
-        data: {
-          resumeId: resume.id,
-          content: generated.content || '',
-          aiModel: generated.aiModel,
-        },
+        data: { title: `${generated.data.personalInfo.fullName} - ${resume.id}` },
       });
 
       await tx.user.update({
@@ -107,37 +89,35 @@ export class ResumeRepository {
 
       return resume;
     });
-    return transation;
   }
 
   async getResume(id: string) {
     return this.db.resume.findUnique({
       where: { id },
       include: {
-        generatedResumes: true,
+        generatedResumes: {
+          include: {
+            personalInfo: true,
+            skills: true,
+            education: { orderBy: { order: 'asc' } },
+            experiences: { orderBy: { order: 'asc' } },
+            projects: { orderBy: { order: 'asc' } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   }
 
   async getResumeForDuplicate(id: string) {
-    return this.db.resume.findUnique({
-      where: { id },
-      include: {
-        personalInfo: true,
-        skills: true,
-        education: true,
-        experiences: true,
-        projects: true,
-        generatedResumes: true,
-      },
-    });
+    return this.getResume(id);
   }
 
   async duplicateResume(
     sourceResume: NonNullable<
       Awaited<ReturnType<ResumeRepository['getResumeForDuplicate']>>
     >,
-    generatedResume: GeneratedResume,
+    generatedResume: GeneratedResumeWithDetails,
     userId: string,
   ) {
     return this.db.$transaction(async (tx) => {
@@ -145,65 +125,64 @@ export class ResumeRepository {
         data: {
           userId,
           type: sourceResume.type,
-          personalInfo: sourceResume.personalInfo
-            ? {
-                create: {
-                  fullName: sourceResume.personalInfo.fullName,
-                  email: sourceResume.personalInfo.email,
-                  phone: sourceResume.personalInfo.phone,
-                  address: sourceResume.personalInfo.address,
-                },
-              }
-            : undefined,
-          skills: sourceResume.skills
-            ? {
-                create: {
-                  soft: sourceResume.skills.soft,
-                  languages: sourceResume.skills.languages,
-                  technical: sourceResume.skills.technical,
-                },
-              }
-            : undefined,
-          education: {
-            create: sourceResume.education.map((edu) => ({
-              university: edu.university,
-              degree: edu.degree ?? '',
-              fieldOfStudy: edu.fieldOfStudy,
-              startDate: edu.startDate,
-              endDate: edu.endDate,
-              stillStudying: edu.stillStudying,
-            })),
-          },
-          experiences: {
-            create: sourceResume.experiences.map((exp) => ({
-              company: exp.company,
-              position: exp.position,
-              description: exp.description,
-              startDate: exp.startDate,
-              endDate: exp.endDate,
-              stillWorking: exp.stillWorking,
-            })),
-          },
-          projects: {
-            create: sourceResume.projects.map((project) => ({
-              title: project.title,
-              description: project.description,
-            })),
-          },
           generatedResumes: {
             create: {
-              content:
-                generatedResume.content === null
-                  ? Prisma.JsonNull
-                  : (generatedResume.content as Prisma.InputJsonValue),
               aiModel: generatedResume.aiModel,
+              summary: generatedResume.summary,
+              personalInfo: generatedResume.personalInfo
+                ? {
+                    create: {
+                      fullName: generatedResume.personalInfo.fullName,
+                      email: generatedResume.personalInfo.email,
+                      phone: generatedResume.personalInfo.phone,
+                      address: generatedResume.personalInfo.address,
+                    },
+                  }
+                : undefined,
+              skills: generatedResume.skills
+                ? {
+                    create: {
+                      soft: generatedResume.skills.soft,
+                      languages: generatedResume.skills.languages,
+                      technical: generatedResume.skills.technical,
+                    },
+                  }
+                : undefined,
+              education: {
+                create: generatedResume.education.map((education) => ({
+                  university: education.university,
+                  degree: education.degree,
+                  fieldOfStudy: education.fieldOfStudy,
+                  startDate: education.startDate,
+                  endDate: education.endDate,
+                  order: education.order,
+                })),
+              },
+              experiences: {
+                create: generatedResume.experiences.map((experience) => ({
+                  company: experience.company,
+                  position: experience.position,
+                  startDate: experience.startDate,
+                  endDate: experience.endDate,
+                  responsibilities: experience.responsibilities,
+                  order: experience.order,
+                })),
+              },
+              projects: {
+                create: generatedResume.projects.map((project) => ({
+                  title: project.title,
+                  technologies: project.technologies,
+                  features: project.features,
+                  order: project.order,
+                })),
+              },
             },
           },
         },
       });
 
-      const title = sourceResume.personalInfo
-        ? `${sourceResume.personalInfo.fullName} - ${resume.id}`
+      const title = generatedResume.personalInfo
+        ? `${generatedResume.personalInfo.fullName} - ${resume.id}`
         : resume.id;
 
       await tx.user.update({
@@ -233,24 +212,51 @@ export class ResumeRepository {
       where: {
         userId,
         title: title.toLocaleLowerCase(),
-        ...(excludeResumeId
-          ? {
-              id: {
-                not: excludeResumeId,
-              },
-            }
-          : {}),
+        ...(excludeResumeId ? { id: { not: excludeResumeId } } : {}),
       },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
   }
 
-  async updateGeneratedResume(id: string, generatedJSON: string) {
+  async updateGeneratedResume(id: string, data: GeneratedResumeDto) {
     return this.db.generatedResume.update({
       where: { id },
-      data: { content: generatedJSON },
+      data: {
+        summary: data.summary,
+        personalInfo: { upsert: { create: data.personalInfo, update: data.personalInfo } },
+        skills: { upsert: { create: data.skills, update: data.skills } },
+        education: {
+          deleteMany: {},
+          create: data.education.map((education, order) => ({
+            university: education.university,
+            degree: education.degree,
+            fieldOfStudy: education.fieldOfStudy,
+            startDate: education.startDate,
+            endDate: education.endDate ?? '',
+            order,
+          })),
+        },
+        experiences: {
+          deleteMany: {},
+          create: data.experience.map((experience, order) => ({
+            company: experience.company,
+            position: experience.position,
+            startDate: experience.startDate,
+            endDate: experience.endDate ?? '',
+            responsibilities: experience.responsibilities,
+            order,
+          })),
+        },
+        projects: {
+          deleteMany: {},
+          create: data.projects.map((project, order) => ({
+            title: project.title,
+            technologies: project.technologies,
+            features: project.features,
+            order,
+          })),
+        },
+      },
     });
   }
 
@@ -272,14 +278,19 @@ export class ResumeRepository {
 
   async createGeneratedResume(
     resumeId: string,
-    generatedJSON: string,
+    data: GeneratedResumeDto,
     aiModel: string,
   ) {
+    const latestVersion = await this.db.generatedResume.aggregate({
+      where: { resumeId },
+      _max: { version: true },
+    });
+
     return this.db.generatedResume.create({
       data: {
         resumeId,
-        content: generatedJSON,
-        aiModel: aiModel,
+        version: (latestVersion._max.version ?? 0) + 1,
+        ...this.generatedResumeData(data, aiModel),
       },
     });
   }
