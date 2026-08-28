@@ -13,4 +13,10 @@ export class GenerateResponsibilitieDto {
   @IsString({ each: true })
   @IsOptional()
   responsibilities: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  technologies?: string[];
 }
+

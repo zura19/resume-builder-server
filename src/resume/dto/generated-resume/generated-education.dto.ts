@@ -1,5 +1,11 @@
 // dto/education.dto.ts
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 export class GeneratedEducationDto {
   @IsString()
@@ -7,8 +13,8 @@ export class GeneratedEducationDto {
   university: string;
 
   @IsString()
-  // @IsNotEmpty()
-  degree: string;
+  @IsOptional()
+  degree?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -16,11 +22,17 @@ export class GeneratedEducationDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/^\d{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/, {
+    message: 'startDate must use the YYYY/MM/DD format.',
+  })
   startDate: string;
 
   @IsOptional()
   @IsString()
-  endDate?: string;
+  // @Matches(/^\d{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/, {
+  //   message: 'endDate must use the YYYY/MM/DD format.',
+  // })
+  endDate?: string | null;
 
   @IsOptional()
   @IsBoolean()
