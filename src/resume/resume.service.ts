@@ -415,6 +415,7 @@ export class ResumeService {
         startDate: experience.startDate,
         endDate: experience.endDate,
         responsibilities: experience.responsibilities,
+        technologies: experience.technologies,
       })),
       projects: generatedResume.projects.map((project) => ({
         title: project.title,

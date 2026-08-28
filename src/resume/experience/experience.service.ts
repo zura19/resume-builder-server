@@ -18,6 +18,7 @@ export class ExperienceService {
       startDate: data.startDate,
       endDate: data.endDate ?? '',
       responsibilities: data.responsibilities,
+      technologies: data.technologies ?? [],
       ...(order === undefined ? {} : { order }),
     };
   }

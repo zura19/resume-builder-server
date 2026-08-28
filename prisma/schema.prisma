@@ -119,6 +119,7 @@ model Experience {
   startDate        String
   endDate          String
   responsibilities String[]
+  technologies     String[]
   order            Int      @default(0)
 
   generatedResumeId String

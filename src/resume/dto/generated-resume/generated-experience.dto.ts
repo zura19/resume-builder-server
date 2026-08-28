@@ -38,4 +38,10 @@ export class GeneratedExperienceDto {
   @IsString({ each: true })
   @IsOptional({ each: true })
   responsibilities: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional({ each: true })
+  technologies: string[];
 }
+

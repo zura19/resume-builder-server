@@ -54,7 +54,8 @@ JSON FORMAT:
     "position": string,
     "startDate": string,
     "endDate": string,
-    "responsibilities": string[]
+    "responsibilities": string[],
+    "technologies": string[]
   }[],
   "projects": {
     "title": string,
@@ -76,7 +77,7 @@ WHAT I WANT:
 - Do NOT infer or invent a degree when the user did not provide one
 - If experience is empty, return "experience": []
 - If projects is empty, return "projects": []
-- If responsibilities is empty inside an existing experience item, return "responsibilities": []
+- If responsibilities or technologies is empty inside an existing experience item, return an empty array for that field
 - If technologies or features is empty inside an existing project item, return an empty array for that field
 - Do NOT infer, invent, or add education, experience, projects, responsibilities, technologies, or features when the related user array is empty
 - Skills must be based ONLY on the user's skills input
@@ -228,7 +229,8 @@ JSON FORMAT:
       "position": string,
       "startDate": string,
       "endDate": string,
-      "responsibilities": string[]
+      "responsibilities": string[],
+      "technologies": string[]
     }[],
     "projects": {
       "title": string,
