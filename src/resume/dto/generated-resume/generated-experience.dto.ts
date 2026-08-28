@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
 } from 'class-validator';
 
 export class GeneratedExperienceDto {
@@ -17,11 +18,17 @@ export class GeneratedExperienceDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/^\d{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/, {
+    message: 'startDate must use the YYYY/MM/DD format.',
+  })
   startDate: string;
 
-  @IsOptional()
   @IsString()
-  endDate?: string;
+  // @Matches(/^\d{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/, {
+  //   message: 'endDate must use the YYYY/MM/DD format.',
+  // })
+  @IsOptional()
+  endDate?: string | null;
 
   @IsOptional()
   @IsBoolean()
@@ -29,6 +36,12 @@ export class GeneratedExperienceDto {
 
   @IsArray()
   @IsString({ each: true })
-  @IsNotEmpty({ each: true })
+  @IsOptional({ each: true })
   responsibilities: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional({ each: true })
+  technologies: string[];
 }
+

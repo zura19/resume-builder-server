@@ -7,9 +7,24 @@ import { AiService } from 'src/ai/ai.service';
 import { UserModule } from 'src/user/user.module';
 import { CanGenerateAiGuard } from 'src/common/guards/can-generate-ai.guard';
 import { CanUseAiGuard } from 'src/common/guards/can-use-ai.guard';
+import { EducationModule } from './education/education.module';
+import { ExperienceModule } from './experience/experience.module';
+import { PersonalInfoModule } from './personal-info/personal-info.module';
+import { ProjectModule } from './project/project.module';
+import { SkillsModule } from './skills/skills.module';
+import { SummaryModule } from './summary/summary.module';
 
 @Module({
-  imports: [AiModule, UserModule],
+  imports: [
+    AiModule,
+    UserModule,
+    SummaryModule,
+    PersonalInfoModule,
+    SkillsModule,
+    EducationModule,
+    ExperienceModule,
+    ProjectModule,
+  ],
   controllers: [ResumeController],
   providers: [
     ResumeService,

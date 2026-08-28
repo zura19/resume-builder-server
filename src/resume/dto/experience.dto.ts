@@ -1,5 +1,5 @@
-// dto/experience.dto.ts
 import {
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsOptional,
@@ -32,4 +32,10 @@ export class ExperienceDto {
   @IsOptional()
   @IsBoolean()
   stillWorking?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  technologies?: string[];
 }
+

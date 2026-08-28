@@ -96,22 +96,6 @@ export class ResumeController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Put(':id/:generatedResumeId')
-  async update(
-    @Param('id') id: string,
-    @Param('generatedResumeId') generatedResumeId: string,
-    @Body() body: GeneratedResumeDto,
-    @UserDecorator() user: User,
-  ) {
-    return await this.resumeService.updateResume(
-      id,
-      generatedResumeId,
-      body,
-      user,
-    );
-  }
-
-  @UseGuards(AuthGuard('jwt'))
   @Delete('generated/:id/:generatedResumeId')
   async deleteGeneratedResume(
     @Param('id') id: string,

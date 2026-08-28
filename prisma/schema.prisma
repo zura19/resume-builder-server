@@ -46,14 +46,8 @@ enum Role {
 }
 
 model Resume {
-  id           String        @id @default(cuid())
-  title        String?
-  personalInfo PersonalInfo?
-  skills       Skills?
-  education    Education[]
-  experiences  Experience[]
-  projects     Project[]
-
+  id               String            @id @default(cuid())
+  title            String?
   type             ResumeType        @default(modern)
   generatedResumes GeneratedResume[]
 
@@ -67,10 +61,15 @@ model Resume {
 }
 
 model GeneratedResume {
-  id      String @id @default(cuid())
-  aiModel String
-  content Json
-  version Int    @default(1)
+  id           String        @id @default(cuid())
+  aiModel      String
+  version      Int           @default(1)
+  summary      String
+  personalInfo PersonalInfo?
+  skills       Skills?
+  education    Education[]
+  experiences  Experience[]
+  projects     Project[]
 
   resumeId String
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
@@ -88,43 +87,48 @@ model PersonalInfo {
   phone    String
   address  String
 
-  resumeId String @unique
-  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  generatedResumeId String          @unique
+  generatedResume   GeneratedResume @relation(fields: [generatedResumeId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
 
 model Education {
-  id            String  @id @default(cuid())
-  university    String
-  degree        String
-  fieldOfStudy  String
-  startDate     String
-  endDate       String?
-  stillStudying Boolean @default(false)
+  id           String  @id @default(cuid())
+  university   String
+  degree       String?
+  fieldOfStudy String
+  startDate    String
+  endDate      String
+  order        Int     @default(0)
 
-  resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  generatedResumeId String
+  generatedResume   GeneratedResume @relation(fields: [generatedResumeId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+
+  @@index([generatedResumeId, order])
 }
 
 model Experience {
-  id           String  @id @default(cuid())
-  company      String
-  position     String
-  description  String?
-  startDate    String
-  endDate      String?
-  stillWorking Boolean @default(false)
+  id               String   @id @default(cuid())
+  company          String
+  position         String
+  startDate        String
+  endDate          String
+  responsibilities String[]
+  technologies     String[]
+  order            Int      @default(0)
 
-  resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  generatedResumeId String
+  generatedResume   GeneratedResume @relation(fields: [generatedResumeId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+
+  @@index([generatedResumeId, order])
 }
 
 model Skills {
@@ -133,23 +137,27 @@ model Skills {
   languages String[]
   technical String[]
 
-  resumeId String @unique
-  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  generatedResumeId String          @unique
+  generatedResume   GeneratedResume @relation(fields: [generatedResumeId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
 
 model Project {
-  id          String @id @default(cuid())
-  title       String
-  description String
+  id           String   @id @default(cuid())
+  title        String
+  technologies String[]
+  features     String[]
+  order        Int      @default(0)
 
-  resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  generatedResumeId String
+  generatedResume   GeneratedResume @relation(fields: [generatedResumeId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+
+  @@index([generatedResumeId, order])
 }
 
 enum ResumeType {
